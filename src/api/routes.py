@@ -1,10 +1,16 @@
 """
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
+from typing import List
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import db, User
-from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
+from flask_jwt_extended import (
+    jwt_required, create_access_token,
+    get_jwt_identity, current_user
+)
+
+from api.utils import generate_sitemap, APIException
+from api.models import db, User, Post
 
 api = Blueprint('api', __name__)
 
@@ -12,11 +18,96 @@ api = Blueprint('api', __name__)
 CORS(api)
 
 
-@api.route('/hello', methods=['POST', 'GET'])
-def handle_hello():
+@api.route("signup", methods=["POST"])
+def signup():
+    user = db.session.scalars(
+        db.select(User).filter_by(
+            username=request.json.get("username")
+        )
+    ).first()
 
-    response_body = {
-        "message": "Hello! I'm a message that came from the backend, check the network tab on the google inspector and you will see the GET request"
-    }
+    if user:
+        return jsonify(msg="Invalid username or password"), 400
 
-    return jsonify(response_body), 200
+    user = User(**request.json)
+
+    db.session.add(user)
+    db.session.commit()
+    db.session.refresh(user)
+
+    return jsonify(user.serialize())
+
+
+@api.route("/login", methods=["POST"])
+def login():
+    user = db.session.scalars(
+        db.select(User).filter_by(
+            username=request.json.get("username")
+        )
+    ).one_or_none()
+
+    if not all([
+        user,
+        getattr(user, "password", None) == request.json.get("password", "")
+    ]):
+        return jsonify(msg="Invalid username or password"), 400
+
+    return (jsonify(
+        token=create_access_token(identity=user)
+    ))
+
+
+@api.route("/posts", methods=["POST"])
+@jwt_required()
+def create_posts():
+    data: dict = request.json
+
+    post: Post = Post(
+        title=data.get("title", ""),
+        content=data.get("content", ""),
+        user=current_user,
+    )
+
+    db.session.add(post)
+    db.session.commit()
+    db.session.refresh(post)
+
+    return jsonify(post.serialize()), 200
+
+
+@api.route("/posts", methods=["GET"])
+def read_posts():
+    posts: List[Post] = db.session.scalars(
+        db.select(Post)
+        .fetch(min(100, int(request.args.get("limit", "10"))))
+        .offset(int(request.args.get("offset", "0")))
+        .order_by(Post.id)
+    ).all()
+    post_count: int = db.session.query(Post).count()
+    return jsonify(
+        posts=[post.serialize() for post in posts],
+        total=post_count,
+    )
+
+
+@api.route("/posts/<int:id>", methods=["PATCH", "PUT"])
+def update_posts(id: int):
+    data: dict = request.json
+    post: Post = db.get_or_404(Post, id)
+
+    for key, value in data.items():
+        setattr(post, key, value)
+
+    db.session.merge(post)
+    db.session.commit()
+    db.session.refresh(post)
+
+    return jsonify(post.serialize()), 200
+
+
+@api.route("/posts/<int:id>", methods=["DELETE"])
+def delete_posts(id: int):
+    post: Post = db.get_or_404(Post, id)
+    db.session.delete(post)
+    db.session.commit()
+    return "", 204
