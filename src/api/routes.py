@@ -5,8 +5,7 @@ from typing import List
 from flask import Flask, request, jsonify, url_for, Blueprint
 from flask_cors import CORS
 from flask_jwt_extended import (
-    jwt_required, create_access_token,
-    get_jwt_identity, current_user
+    jwt_required, create_access_token, current_user,
 )
 
 from api.utils import generate_sitemap, APIException
@@ -14,7 +13,7 @@ from api.models import db, User, Post
 
 api = Blueprint('api', __name__)
 
-# Allow CORS requests to this API
+# Allow CORS requests to this APIf
 CORS(api)
 
 
@@ -50,7 +49,7 @@ def login():
         user,
         getattr(user, "password", None) == request.json.get("password", "")
     ]):
-        return jsonify(msg="Invalid username or password"), 400
+        return jsonify(msg="Invalid username or password"), 401
 
     return (jsonify(
         token=create_access_token(identity=user)

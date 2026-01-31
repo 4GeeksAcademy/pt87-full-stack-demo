@@ -40,7 +40,7 @@ jwt = JWTManager(app)
 
 
 @jwt.user_identity_loader
-def user_identity_lookup(user):
+def user_identity_lookup(user: User):
     return user.username
 
 
