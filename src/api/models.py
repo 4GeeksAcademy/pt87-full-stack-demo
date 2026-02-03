@@ -8,6 +8,11 @@ from sqlalchemy.orm import (
     Mapped, DeclarativeBase,
     relationship, mapped_column,
 )
+from sqlalchemy.ext.hybrid import hybrid_property
+from werkzeug.security import (
+    generate_password_hash,
+    check_password_hash,
+)
 
 
 class Base(DeclarativeBase):
@@ -35,8 +40,8 @@ class User(Base):
     username: Mapped[str] = mapped_column(
         String(256), unique=True, nullable=False,
     )
-    password: Mapped[str] = mapped_column(
-        String(256), nullable=False,
+    _password: Mapped[str] = mapped_column(
+        "password", String(256), nullable=False,
     )
 
     posts: Mapped[List["Post"]] = relationship(
@@ -50,6 +55,17 @@ class User(Base):
 
     def __repr__(self):
         return f"<User {self.username}>"
+
+    @hybrid_property
+    def password(self):
+        return self._password
+
+    @password.setter
+    def password(self, new_pass):
+        self._password = generate_password_hash(new_pass)
+
+    def check_password_hash(self, password):
+        return check_password_hash(self.password, password)
 
     def serialize(self, include_rel=True):
         user_dict = {

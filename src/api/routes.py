@@ -45,15 +45,34 @@ def login():
         )
     ).one_or_none()
 
-    if not all([
-        user,
-        getattr(user, "password", None) == request.json.get("password", "")
-    ]):
+    if not user:
+        return jsonify(msg="Invalid username or password"), 401
+
+    if not user.check_password_hash(request.json.get("password", "")):
         return jsonify(msg="Invalid username or password"), 401
 
     return (jsonify(
         token=create_access_token(identity=user)
     ))
+
+
+@api.route("/changepwd", methods=["PATCH", "PUT"])
+@jwt_required()
+def changepwd():
+    data: dict = request.json
+
+    if not data.get("password"):
+        return jsonify(msg="Invalid password."), 400
+
+    user = current_user
+
+    current_user.password = data.get("password")
+
+    db.session.merge(user)
+    db.session.commit()
+    db.session.refresh(user)
+
+    return jsonify(user.serialize())
 
 
 @api.route("/posts", methods=["POST"])

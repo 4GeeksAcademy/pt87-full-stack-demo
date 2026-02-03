@@ -5,6 +5,16 @@ from . import models
 from .models import db, User, Post
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.theme import Bootstrap4Theme
+from wtforms.fields import PasswordField
+
+
+class UserView(ModelView):
+    column_list = [
+        'id', 'username', 'password'
+    ]
+    form_extra_fields = {
+        'password': PasswordField('password')
+    }
 
 
 def setup_admin(app):
@@ -12,7 +22,7 @@ def setup_admin(app):
     admin = Admin(app, name='4Geeks Admin',
                   theme=Bootstrap4Theme(swatch='slate'))
 
-    admin.add_view(ModelView(User, db.session))
+    admin.add_view(UserView(User, db.session))
     admin.add_view(ModelView(Post, db.session))
 
     # Dynamically add all models to the admin interface
