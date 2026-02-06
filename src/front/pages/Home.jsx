@@ -1,44 +1,46 @@
 import React, { useEffect } from "react"
 import { Signup, Login } from "../components/Auth.jsx";
+import { AOrB, AuthedOrNone, UnauthedOrNone } from "../components/AuthComponents.jsx";
+
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
+import { Link } from "react-router-dom";
+
 
 export const Home = () => {
 
 	const { store, dispatch } = useGlobalReducer()
 
-	const loadMessage = async () => {
-		try {
-			const backendUrl = import.meta.env.VITE_BACKEND_URL
-
-			if (!backendUrl) throw new Error("VITE_BACKEND_URL is not defined in .env file")
-
-			const response = await fetch(backendUrl + "/api/hello")
-			const data = await response.json()
-
-			if (response.ok) dispatch({ type: "set_hello", payload: data.message })
-
-			return data
-
-		} catch (error) {
-			if (error.message) throw new Error(
-				`Could not fetch the message from the backend.
-				Please check if the backend is running and the backend port is public.`
-			);
-		}
-
-	}
-
-	useEffect(() => {
-		loadMessage()
-	}, [])
-
 	return (
 		<div className="text-center mt-5">
 			<div className="row">
 				<div className="col col-6 offset-3">
-					<Login />
+					<UnauthedOrNone>
+						<Login />
+					</UnauthedOrNone>
 				</div>
 			</div>
-		</div>
+			<div className="row">
+				<div className="col col-3 offset-3">
+					<AOrB
+						loggedInComponent={<div>
+							<p>You're logged in!</p>
+							<button className="btn btn-danger" onClick={() => dispatch({
+								type: "update_token",
+								token: null,
+							})}>
+								Click to logout
+							</button>
+						</div>}
+						loggedOutComponent={<p>You're not logged in...</p>}
+					/>
+				</div>
+				<div className="col col-3">
+					<AuthedOrNone>
+						<p>If this is showing up, you're logged in.</p>
+						<p><Link to="/secret">See the secret page here!</Link></p>
+					</AuthedOrNone>
+				</div>
+			</div>
+		</div >
 	);
 }; 

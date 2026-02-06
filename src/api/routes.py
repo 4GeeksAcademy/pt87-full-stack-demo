@@ -51,9 +51,9 @@ def login():
     if not user.check_password_hash(request.json.get("password", "")):
         return jsonify(msg="Invalid username or password"), 401
 
-    return (jsonify(
+    return jsonify(
         token=create_access_token(identity=user)
-    ))
+    )
 
 
 @api.route("/changepwd", methods=["PATCH", "PUT"])

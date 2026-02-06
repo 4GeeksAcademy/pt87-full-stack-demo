@@ -1,6 +1,11 @@
 import { useState } from "react";
+import useGlobalReducer from "../hooks/useGlobalReducer";
+import { useNavigate } from "react-router-dom";
 
-const Login = () => {
+const Login = ({ redirect = null }) => {
+  const { dispatch } = useGlobalReducer();
+  const nav = useNavigate();
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
@@ -22,7 +27,15 @@ const Login = () => {
 
     if (resp.ok) {
       const data = await resp.json();
-      // We can do things with that data, like add it to the store.
+
+      dispatch({
+        type: "update_token",
+        token: data.token,
+      })
+    }
+
+    if (resp.ok && redirect) {
+      nav(redirect);
     }
   }
 

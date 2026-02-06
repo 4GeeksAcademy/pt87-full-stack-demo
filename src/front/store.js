@@ -1,27 +1,30 @@
-export const initialStore = () => {
-  return {
-    user: {},
-  };
-};
+export const initialStore = () => ({
+  token: null,
+  user: {},
+  posts: [],
+});
 
 export default function storeReducer(store, action = {}) {
-  switch (action.type) {
-    case "set_hello":
-      return {
-        ...store,
-        message: action.payload,
-      };
-
-    case "add_task":
-      const { id, color } = action.payload;
-
-      return {
-        ...store,
-        todos: store.todos.map((todo) =>
-          todo.id === id ? { ...todo, background: color } : todo,
-        ),
-      };
-    default:
-      throw Error("Unknown action.");
+  if (action.type === "update_token") {
+    return {
+      ...store,
+      token: action.token,
+    };
   }
+
+  if (action.type === "update_user") {
+    return {
+      ...store,
+      user: action.user,
+    };
+  }
+
+  if (action.type === "update_posts") {
+    return {
+      ...store,
+      posts: action.posts,
+    };
+  }
+
+  return store;
 }
